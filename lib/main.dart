@@ -1,19 +1,34 @@
-import 'package:bloc_vandad/state/fetch_results.dart';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:bloc_vandad/state/fetch_results_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'bloc/persons_bloc.dart';
-import 'events/load_person.dart';
-import 'model/person_url.dart';
+import 'events/load_person_action.dart';
 
 import 'dart:developer' as devtools show log;
-extension Log on Object{
+
+import 'model/person_model.dart';
+
+extension Log on Object {
   void log() => devtools.log(toString());
 }
 
 void main() {
   runApp(const App());
 }
+
+const person1Url = 'http://127.0.0.1:3000/api/person_1.json';
+const person2Url = 'http://127.0.0.1:3000/api/person_2.json';
+
+Future<Iterable<Person>> getPersons(String url) => HttpClient()
+    .getUrl(Uri.parse(url))
+    .then((request) => request.close())
+    .then((response) => response.transform(utf8.decoder).join())
+    .then((str) => json.decode(str) as List<dynamic>)
+    .then((list) => list.map((item) => Person.fromJson(jsonEncode(item))));
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -51,13 +66,19 @@ class HomePage extends StatelessWidget {
             children: [
               ElevatedButton(
                 onPressed: () {
-                  context.read<PersonsBloc>().add(const LoadPersonAction(url: PersonUrl.person1));
+                  context.read<PersonsBloc>().add(const LoadPersonAction(
+                        url: person1Url,
+                        loader: getPersons,
+                      ));
                 },
                 child: const Text('Fetch #person1'),
               ),
               ElevatedButton(
                 onPressed: () {
-                  context.read<PersonsBloc>().add(const LoadPersonAction(url: PersonUrl.person2));
+                  context.read<PersonsBloc>().add(const LoadPersonAction(
+                        url: person2Url,
+                        loader: getPersons,
+                      ));
                 },
                 child: const Text('Fetch #person2'),
               ),
